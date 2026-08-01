@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]>      <html class="no-js"> <!--<![endif]-->
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>blog test</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="">
+    </head>
+
+    <!--header-->
+
+    <footer style="
+    font-size:300%; 
+    font-family: 'Franklin Gothic Medium'; 
+    text-align: center;">
+        salsatobias's blog
+    </footer>
+
+    <div style="display: flex; padding: 10px;"></div>
+
+    <div style="display: flex; justify-content: center; align-items:center; gap: 100px;">
+        <a style="font-size:140%;" href="../index.html">front page</a>
+        <a style="font-size:140%;">placeholder1</a>
+        <a style="font-size:140%;">placeholder2</a>
+    </div>
+
+    <!--/header-->
+
+    <body>
+        <h1>31/07/2026: How Naturalmotion endorphin assets are encrypted</h1>
+
+
+        <div>
+            <p style="font-size:140%; width: 70%; text-align: left;">
+                endorphin has been a niche interest of mine for a good part of my life, naturalmotion's ragdoll tech has always impressed little old me, now that im older and wiser i can delve into how endorphin's assets are encrypted.<br>
+                endorphin has 2 editions: professional and learning. professional edition only compresses the files with zlib, while learning edition applies a extra layer of aes encryption into the assets. almost all naturalmotion assets are just .xml files under the hood. we'll start with the professional edition.
+                <br><br>            
+                a typical asset from endorphin PE is structured as follows:<br>
+            </p>
+            <p style="font-size:140%; width: 70%; text-align: left; font-weight:bold; padding-left: 50px;">
+                -zlib data<br>
+            	-integer that represents original data size (4 bytes)<br>
+            	-endorphin signature (16 bytes)<br>
+            </p>
+            <p style="font-size:140%; width: 70%; text-align: left;">
+                and a typical asset from endorphin LE is structured as follows:<br>
+            </p>
+            <p style="font-size:140%; width: 70%; text-align: left; font-weight:bold; padding-left: 50px;">
+                	-AES-encrypted data(zlib data, 4 byte integer)<br>
+                	-endorphin signature (16 bytes)<br>
+            </p>
+            <p style="font-size:140%; width: 70%; text-align: left;">
+                <br>
+                decompiling a PE asset is fairly easy. all it takes is a single line of python: "zlib.decompress(rawfile[:-20])".<br>
+                how about the LE asset? how is the key for the AES encryption generated? its actually rather simple as well, take in the following structure:<br>
+                <b>struct aeskeybuffer<br>
+                {<br>
+                    std::string key1;<br>
+                    std::string key2;<br>
+                    std::string key3;<br>
+                    bool use_haspkey;<br>
+                }<br></b>
+                the program constructs a variable of this structure and assigns the following values to it:<br>
+                <b>key1 = "8c22115edd7d4277881476f9b2b7fd55";<br>
+                key2 = "09730b838dfc44ebb096309ef5125ef";<br>
+                key3 = "7178b59a554f4e819c538e8046714fa";<br>
+                use_haspkey = false;<br></b>
+                key1 is seemingly unused in code, key2 is always used, and key3 is only used if use_haspkey is false (it is never true so key3 is always used). afterwards, during the encryption/decryption process, endorphin performs a XOR operation for every character in the 2 previously selected keys, resulting in a key that can be used to encrypt and decrypt files. the simple python script below represents this process:
+                <br><br>
+                <b>
+                key1 = bytes("8c22115edd7d4277881476f9b2b7fd55\0", 'utf-8') #unused<br>
+                key2 = bytes("09730b838dfc44ebb096309ef5125ef\0", 'utf-8')<br>
+                key3 = bytes("7178b59a554f4e819c538e8046714fa\0", 'utf-8')<br>
+                key = bytes(i ^ j for i, j in zip(key2, key3))<br>
+                cipher = AES.new(key, AES.MODE_CBC, b"\x00" * 16)<br>
+                decrypted = cipher.decrypt(zlib.decompress( rawfile[:-4] )[:-16])<br>
+                encrypted = cipher.encrypt(zlib.compress( decrypted + bytes(len(decrypted)) )) + endorphinLE_signature<br>
+                </b>
+                <br>
+                the null terminator, oddly enough, is included in the key generation process, since std::string automagically adds one when it is assigned a string with no null terminator.<br>
+                with the python script above, you can already decompile & compile all endorphin LE and PE assets ! have fun with it :)<br>
+            </p>
+
+
+        </div>
+        <script src="" async defer></script>
+    </body>
+</html>
